@@ -1,0 +1,8 @@
+#env
+.env
+
+# Database
+data.db
+
+# Temp
+tmp/
