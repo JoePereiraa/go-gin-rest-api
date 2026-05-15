@@ -70,7 +70,7 @@ func (m *UserModel) GetAll() ([]*User, error) {
 	for rows.Next() {
 		var user User
 
-		err := rows.Scan(&user.Id, &user.Name, &user.Email)
+		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password)
 		if err != nil {
 			return nil, err
 		}
