@@ -25,6 +25,61 @@ type loginResponse struct {
 	Token string `json:"token"`
 }
 
+// RegisterUser registers a new user
+// @Summary		Registers a new user
+// @Description	Registers a new user
+// @Tags			auth
+// @Accept			json
+// @Produce		json
+// @Param			user	body		registerRequest	true	"User"
+// @Success		201	{object}	database.User
+// @Router			/api/v1/auth/register [post]
+func (app *application) registerUser(c *gin.Context) {
+	var register registerRequest
+
+	if err := c.ShouldBindJSON(&register); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Error": "Something went wrong",
+		})
+		return
+	}
+
+	register.Password = string(hashedPassword)
+	user := database.User{
+		Email:    register.Email,
+		Password: register.Password,
+		Name:     register.Name,
+	}
+
+	err = app.models.Users.Insert(&user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Could not create user",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user)
+}
+
+// Login logs in a user
+//
+//	@Summary		Logs in a user
+//	@Description	Logs in a user
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body	loginRequest	true	"User"
+//	@Success		200	{object}	loginResponse
+//	@Router			/api/v1/auth/login [post]
 func (app *application) loginRequest(c *gin.Context) {
 	var auth loginRequest
 
@@ -74,40 +129,4 @@ func (app *application) loginRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, loginResponse{
 		Token: tokenString,
 	})
-}
-
-func (app *application) registerUser(c *gin.Context) {
-	var register registerRequest
-
-	if err := c.ShouldBindJSON(&register); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Something went wrong",
-		})
-		return
-	}
-
-	register.Password = string(hashedPassword)
-	user := database.User{
-		Email:    register.Email,
-		Password: register.Password,
-		Name:     register.Name,
-	}
-
-	err = app.models.Users.Insert(&user)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Could not create user",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, user)
 }
